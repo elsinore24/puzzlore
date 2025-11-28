@@ -1,0 +1,101 @@
+{
+  "galaxies": [
+    {
+      "galaxy_id": "nature",
+      "galaxy_name": "Nature",
+      "unlock_requirement": null,
+      "constellations": [
+        {
+          "constellation_id": "forest",
+          "constellation_name": "Enchanted Forest",
+          "icon": "leaf.fill",
+          "unlock_requirement": null,
+          "puzzles_to_complete": 7,
+          "puzzle_ids": [
+            "nature_forest_001",
+            "nature_forest_002",
+            "nature_forest_003",
+            "nature_forest_004",
+            "nature_forest_005",
+            "nature_forest_006",
+            "nature_forest_007",
+            "nature_forest_008",
+            "nature_forest_009",
+            "nature_forest_010"
+          ],
+          "star_positions": [
+            { "puzzle_id": "nature_forest_001", "x": 100, "y": 50 },
+            { "puzzle_id": "nature_forest_002", "x": 150, "y": 90 },
+            { "puzzle_id": "nature_forest_003", "x": 200, "y": 70 },
+            { "puzzle_id": "nature_forest_004", "x": 180, "y": 140 },
+            { "puzzle_id": "nature_forest_005", "x": 120, "y": 160 },
+            { "puzzle_id": "nature_forest_006", "x": 80, "y": 200 },
+            { "puzzle_id": "nature_forest_007", "x": 160, "y": 220 },
+            { "puzzle_id": "nature_forest_008", "x": 220, "y": 180 },
+            { "puzzle_id": "nature_forest_009", "x": 250, "y": 240 },
+            { "puzzle_id": "nature_forest_010", "x": 140, "y": 280 }
+          ],
+          "connections": [
+            [0, 1],
+            [1, 2],
+            [1, 3],
+            [3, 4],
+            [4, 5],
+            [3, 7],
+            [5, 6],
+            [6, 9],
+            [7, 8],
+            [8, 9]
+          ]
+        },
+        {
+          "constellation_id": "ocean",
+          "constellation_name": "Deep Ocean",
+          "icon": "water.waves",
+          "unlock_requirement": "forest",
+          "puzzles_to_complete": 7,
+          "puzzle_ids": [],
+          "star_positions": [],
+          "connections": []
+        },
+        {
+          "constellation_id": "garden",
+          "constellation_name": "Moonlit Garden",
+          "icon": "camera.macro",
+          "unlock_requirement": "ocean",
+          "puzzles_to_complete": 7,
+          "puzzle_ids": [],
+          "star_positions": [],
+          "connections": []
+        }
+      ]
+    },
+    {
+      "galaxy_id": "urban",
+      "galaxy_name": "Urban",
+      "unlock_requirement": "nature",
+      "constellations": [
+        {
+          "constellation_id": "kitchen",
+          "constellation_name": "Cozy Kitchen",
+          "icon": "fork.knife",
+          "unlock_requirement": null,
+          "puzzles_to_complete": 7,
+          "puzzle_ids": [],
+          "star_positions": [],
+          "connections": []
+        },
+        {
+          "constellation_id": "living_room",
+          "constellation_name": "Living Room",
+          "icon": "sofa.fill",
+          "unlock_requirement": "kitchen",
+          "puzzles_to_complete": 7,
+          "puzzle_ids": [],
+          "star_positions": [],
+          "connections": []
+        }
+      ]
+    }
+  ]
+}
