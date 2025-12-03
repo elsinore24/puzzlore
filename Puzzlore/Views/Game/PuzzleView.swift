@@ -1,3 +1,4 @@
+
 //
 //  PuzzleView.swift
 //  Puzzlore
@@ -12,125 +13,139 @@ struct PuzzleView: View {
     let onComplete: () -> Void
     let onExit: () -> Void
 
+    // MARK: - State
     @StateObject private var progressManager = ProgressManager.shared
-
-    @State private var currentInput: String = ""
+    @State private var currentInput = ""
     @State private var revealedIndices: Set<Int> = []
     @State private var shuffledLetters: [String] = []
-    @State private var showingExplanation: Bool = false
-    @State private var isCorrect: Bool = false
-    @State private var wrongAnswerShake: Bool = false
+    @State private var showingExplanation = false
+    @State private var isCorrect = false
+    @State private var wrongAnswerShake = false
+    @State private var hintRevealed = false
+    @State private var shufflesRemaining = 2
+    @State private var rocketBoostUsed = false
+    @State private var boostRevealedIndex: Int? = nil  // Shows first letter in slot as hint (user still inputs it)
+    @State private var showingInsufficientFunds = false  // Popup when user can't afford hint/boost
 
+    // MARK: - Body
     var body: some View {
-        ZStack {
-            // Background image or fallback gradient
-            backgroundView
-                .ignoresSafeArea()
+        GeometryReader { geo in
+            // Get safe area from key window since GeometryReader with ignoresSafeArea reports 0
+            let window = UIApplication.shared.connectedScenes
+                .compactMap { $0 as? UIWindowScene }
+                .flatMap { $0.windows }
+                .first { $0.isKeyWindow }
+            let topInset = window?.safeAreaInsets.top ?? 59
+            let bottomInset = window?.safeAreaInsets.bottom ?? 34
 
-            VStack(spacing: 0) {
-                // Top bar
-                topBar
-                    .padding(.horizontal)
-                    .padding(.top, 8)
+            ZStack {
+                backgroundLayer(geo: geo)
 
-                // Context tag (hint category)
-                contextTag
-                    .padding(.top, 8)
-                    .padding(.bottom, 12)
+                VStack(spacing: 0) {
+                    topBar
+                        .padding(.horizontal)
+                        .padding(.top, topInset + 8)
 
-                // Puzzle image in frosted glass container
-                PuzzleImageView(imageName: puzzle.puzzleImage)
-                    .padding(.bottom, 24)
+                    PuzzleImageView(imageName: puzzle.puzzleImage)
+                        .padding(.top, 12)
+                        .padding(.bottom, 24)
 
-                // Answer slots
-                AnswerSlotsView(
-                    answerLength: puzzle.answer.count,
-                    currentInput: currentInput,
-                    anchorLetters: anchorLettersDict,
-                    revealedIndices: revealedIndices,
-                    correctAnswer: puzzle.answer,
-                    isCorrect: isCorrect
-                )
-                .offset(x: wrongAnswerShake ? 10 : 0)
+                    answerSlots
 
-                Spacer().frame(maxHeight: 16)
+                    Spacer().frame(maxHeight: 16)
 
-                // Action buttons (shuffle and hint on sides)
-                actionButtons
+                    actionButtons
 
-                // Letter wheel with clear button overlay
-                ZStack(alignment: .bottomLeading) {
-                    LetterWheelView(
-                        letters: shuffledLetters,
-                        onWordSubmit: handleWordSubmit,
-                        onWordChange: { word in
-                            // Don't clear input if we already got it correct
-                            if !isCorrect {
-                                currentInput = word
-                            }
-                        }
-                    )
+                    letterWheelSection
+                        .padding(.horizontal)
 
-                    // Clear button in lower left
-                    Button {
-                        currentInput = ""
-                    } label: {
-                        VStack(spacing: 2) {
-                            Image(systemName: "arrow.counterclockwise")
-                                .font(.system(size: 18))
-                            Text("Clear")
-                                .font(.system(size: 9))
-                        }
-                        .foregroundColor(.white.opacity(0.8))
-                        .frame(width: 54, height: 54)
-                        .background(
-                            Circle()
-                                .fill(.thinMaterial.opacity(0.7))
-                        )
-                    }
-                    .offset(x: 16, y: -16)
+                    Spacer(minLength: bottomInset)
                 }
-                .padding(.horizontal)
-            }
 
-            // Success overlay
-            if showingExplanation {
-                explanationOverlay
+                if showingExplanation {
+                    explanationOverlay
+                }
+
+                if showingInsufficientFunds {
+                    insufficientFundsOverlay
+                }
             }
         }
+        .ignoresSafeArea()
         .onAppear {
             shuffledLetters = puzzle.wheelLetters.shuffled()
         }
     }
+}
 
-    // MARK: - Subviews
-
-    @ViewBuilder
-    private var backgroundView: some View {
-        GeometryReader { geometry in
-            if let _ = UIImage(named: puzzle.background) {
-                Image(puzzle.background)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: geometry.size.width, height: geometry.size.height)
-                    .clipped()
-            } else {
-                Constants.Colors.backgroundGradient
-            }
+// MARK: - Background
+private extension PuzzleView {
+    /// Gets the effective background for this puzzle (puzzle override or constellation default)
+    var effectiveBackground: String {
+        if let puzzleBackground = puzzle.background {
+            return puzzleBackground
         }
-        .ignoresSafeArea()
+        // Get constellation background as fallback
+        if let constellation = PuzzleLoader.shared.constellation(containingPuzzle: puzzle.puzzleId) {
+            return constellation.background
+        }
+        return ""
     }
 
-    private var topBar: some View {
+    @ViewBuilder
+    func backgroundLayer(geo: GeometryProxy) -> some View {
+        let bgName = effectiveBackground
+        let totalWidth = geo.size.width + geo.safeAreaInsets.leading + geo.safeAreaInsets.trailing
+        let totalHeight = geo.size.height + geo.safeAreaInsets.top + geo.safeAreaInsets.bottom
+
+        // Static image background for puzzle view
+        if UIImage(named: bgName) != nil {
+            Image(bgName)
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+                .frame(width: totalWidth, height: totalHeight)
+                .position(x: totalWidth / 2, y: totalHeight / 2)
+                .clipped()
+        } else {
+            Constants.Colors.backgroundGradient
+        }
+    }
+}
+
+// MARK: - Top Bar
+private extension PuzzleView {
+    var topBar: some View {
         HStack {
             // Back button
-            Button {
-                onExit()
-            } label: {
-                Image(systemName: "xmark")
+            Button(action: onExit) {
+                Image(systemName: "arrow.left")
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundColor(.white.opacity(0.8))
-                    .frame(width: 44, height: 44)
+                    .frame(width: 54, height: 54)
+                    .background(
+                        Circle()
+                            .fill(Constants.Colors.deepBlue.opacity(0.8))
+                    )
+            }
+
+            Spacer()
+
+            // Context tag (hint) - shown when revealed
+            if hintRevealed {
+                Text(puzzle.contextTag)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.white.opacity(0.9))
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(
+                        Capsule()
+                            .fill(Constants.Colors.purple.opacity(0.6))
+                            .overlay(
+                                Capsule()
+                                    .stroke(Constants.Colors.gold.opacity(0.4), lineWidth: 1)
+                            )
+                    )
+                    .transition(.opacity.combined(with: .scale))
             }
 
             Spacer()
@@ -139,6 +154,7 @@ struct PuzzleView: View {
             HStack(spacing: 4) {
                 Image(systemName: "moon.stars.fill")
                     .foregroundColor(Constants.Colors.starGold)
+
                 Text("\(progressManager.progress.currency)")
                     .font(.system(size: 16, weight: .semibold, design: .rounded))
                     .foregroundColor(.white)
@@ -151,8 +167,11 @@ struct PuzzleView: View {
             )
         }
     }
+}
 
-    private var contextTag: some View {
+// MARK: - Context Tag
+private extension PuzzleView {
+    var contextTag: some View {
         Text(puzzle.contextTag)
             .font(.system(size: 16, weight: .medium))
             .foregroundColor(.white.opacity(0.9))
@@ -167,53 +186,112 @@ struct PuzzleView: View {
                     )
             )
     }
+}
 
-    private var actionButtons: some View {
+// MARK: - Answer Slots
+private extension PuzzleView {
+    var answerSlots: some View {
+        AnswerSlotsView(
+            answerLength: puzzle.answer.count,
+            currentInput: currentInput,
+            anchorLetters: anchorLettersDict,
+            revealedIndices: revealedIndices,
+            correctAnswer: puzzle.answer,
+            isCorrect: isCorrect,
+            boostHintIndex: boostRevealedIndex
+        )
+        .offset(x: wrongAnswerShake ? 10 : 0)
+    }
+}
+
+// MARK: - Action Buttons
+private extension PuzzleView {
+    var actionButtons: some View {
         HStack {
             // Shuffle button
             Button {
-                withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
-                    shuffledLetters = shuffledLetters.shuffledDifferently()
+                if shufflesRemaining > 0 {
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                        shuffledLetters = shuffledLetters.shuffledDifferently()
+                        shufflesRemaining -= 1
+                    }
                 }
             } label: {
-                VStack(spacing: 4) {
-                    Image(systemName: "shuffle")
-                        .font(.system(size: 20))
-                    Text("Shuffle")
-                        .font(.system(size: 10))
-                }
-                .foregroundColor(.white.opacity(0.8))
-                .frame(width: 60, height: 60)
-                .background(
-                    Circle()
-                        .fill(.thinMaterial.opacity(0.7))
+                actionButton(
+                    icon: "shuffle",
+                    label: "Shuffle",
+                    color: shufflesRemaining > 0 ? .white.opacity(0.8) : .gray
                 )
             }
+            .disabled(shufflesRemaining <= 0)
 
             Spacer()
 
             // Hint button
-            Button {
-                useHint()
-            } label: {
-                VStack(spacing: 4) {
-                    Image(systemName: "lightbulb.fill")
-                        .font(.system(size: 20))
-                    Text("Hint")
-                        .font(.system(size: 10))
-                }
-                .foregroundColor(Constants.Colors.gold)
-                .frame(width: 60, height: 60)
-                .background(
-                    Circle()
-                        .fill(.thinMaterial.opacity(0.7))
+            Button(action: useHint) {
+                actionButton(
+                    icon: hintRevealed ? "lightbulb.fill" : "lightbulb",
+                    label: "Hint",
+                    color: hintRevealed ? .gray : Constants.Colors.gold
                 )
             }
+            .disabled(hintRevealed)
         }
         .padding(.horizontal, 30)
     }
 
-    private var explanationOverlay: some View {
+    func actionButton(icon: String, label: String, color: Color = .white.opacity(0.8)) -> some View {
+        VStack(spacing: 4) {
+            Image(systemName: icon)
+                .font(.system(size: 20))
+
+            Text(label)
+                .font(.system(size: 10))
+        }
+        .foregroundColor(color)
+        .frame(width: 60, height: 60)
+        .background(
+            Circle()
+                .fill(Constants.Colors.deepBlue.opacity(0.8))
+        )
+    }
+}
+
+// MARK: - Letter Wheel + Rocket Boost Button
+private extension PuzzleView {
+    var letterWheelSection: some View {
+        ZStack(alignment: .bottomLeading) {
+            LetterWheelView(
+                letters: shuffledLetters,
+                onWordSubmit: handleWordSubmit,
+                onWordChange: { word in
+                    if !isCorrect { currentInput = word }
+                }
+            )
+
+            Button(action: useRocketBoost) {
+                VStack(spacing: 2) {
+                    Image(systemName: rocketBoostUsed ? "bolt.fill" : "bolt")
+                        .font(.system(size: 18))
+                    Text("Boost")
+                        .font(.system(size: 9))
+                }
+                .foregroundColor(rocketBoostUsed ? .gray : Constants.Colors.starCyan)
+                .frame(width: 54, height: 54)
+                .background(
+                    Circle().fill(Constants.Colors.deepBlue.opacity(0.8))
+                )
+            }
+            .disabled(rocketBoostUsed)
+            .offset(x: 16, y: -16)
+        }
+    }
+}
+
+// MARK: - Explanation Overlay
+private extension PuzzleView {
+    var explanationOverlay: some View {
         ZStack {
             Color.black.opacity(0.7)
                 .ignoresSafeArea()
@@ -223,35 +301,23 @@ struct PuzzleView: View {
                 }
 
             VStack(spacing: 24) {
-                // Success icon
                 Image(systemName: "star.fill")
                     .font(.system(size: 60))
                     .foregroundColor(Constants.Colors.starGold)
                     .glow(color: Constants.Colors.starGold, radius: 20)
 
-                // Answer
                 Text(puzzle.answer)
                     .font(.system(size: 32, weight: .bold, design: .rounded))
                     .foregroundColor(.white)
 
-                // Explanation
                 Text(puzzle.explanation.breakdown)
                     .font(.system(size: 16))
                     .foregroundColor(.white.opacity(0.9))
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 30)
 
-                // Reward
-                HStack {
-                    Image(systemName: "moon.stars.fill")
-                        .foregroundColor(Constants.Colors.starGold)
-                    Text("+\(puzzle.moonstoneReward)")
-                        .font(.system(size: 20, weight: .bold, design: .rounded))
-                        .foregroundColor(Constants.Colors.starGold)
-                }
-                .padding(.top, 10)
+                rewardView
 
-                // Continue button
                 Button {
                     showingExplanation = false
                     onComplete()
@@ -281,138 +347,191 @@ struct PuzzleView: View {
         }
     }
 
-    // MARK: - Logic
+    var rewardView: some View {
+        HStack {
+            Image(systemName: "moon.stars.fill")
+                .foregroundColor(Constants.Colors.starGold)
 
-    private var anchorLettersDict: [Int: String] {
-        var dict: [Int: String] = [:]
-        for index in puzzle.anchorLetters {
-            let answerArray = Array(puzzle.answer)
-            if index < answerArray.count {
-                dict[index] = String(answerArray[index])
+            Text("+\(puzzle.moonstoneReward)")
+                .font(.system(size: 20, weight: .bold, design: .rounded))
+                .foregroundColor(Constants.Colors.starGold)
+        }
+        .padding(.top, 10)
+    }
+}
+
+// MARK: - Insufficient Funds Toast
+private extension PuzzleView {
+    var insufficientFundsOverlay: some View {
+        VStack {
+            Spacer()
+
+            HStack(spacing: 6) {
+                Image(systemName: "moon.stars.fill")
+                    .font(.system(size: 14))
+                    .foregroundColor(Constants.Colors.starGold.opacity(0.7))
+
+                Text("Not enough")
+                    .font(.system(size: 13, weight: .medium, design: .rounded))
+                    .foregroundColor(.white.opacity(0.9))
             }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+            .background(
+                Capsule()
+                    .fill(Constants.Colors.deepBlue.opacity(0.95))
+                    .overlay(
+                        Capsule()
+                            .stroke(Constants.Colors.gold.opacity(0.4), lineWidth: 1)
+                    )
+            )
+            .shadow(color: .black.opacity(0.3), radius: 8, x: 0, y: 4)
+            .padding(.bottom, 200)
+        }
+        .transition(.opacity.combined(with: .move(edge: .bottom)))
+        .onAppear {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                withAnimation(.easeOut(duration: 0.3)) {
+                    showingInsufficientFunds = false
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Logic
+private extension PuzzleView {
+    var anchorLettersDict: [Int: String] {
+        var dict: [Int: String] = [:]
+        let answerArray = Array(puzzle.answer)
+
+        for index in puzzle.anchorLetters where index < answerArray.count {
+            dict[index] = String(answerArray[index])
         }
         return dict
     }
 
-    private func handleWordSubmit(_ word: String) {
+    func handleWordSubmit(_ word: String) {
         currentInput = word
 
-        // Build full answer including anchors and revealed letters
         let fullAnswer = buildFullAnswer(from: word)
 
         if fullAnswer.uppercased() == puzzle.answer.uppercased() {
-            // Correct!
-            withAnimation(.easeInOut(duration: 0.3)) {
-                isCorrect = true
-            }
-            progressManager.completePuzzle(puzzle)
-
-            // Haptic feedback
-            let notification = UINotificationFeedbackGenerator()
-            notification.notificationOccurred(.success)
-
-            // Show explanation after 2 second delay to show green success state
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                withAnimation(.spring()) {
-                    showingExplanation = true
-                }
-            }
+            correctAnswerSequence()
         } else if fullAnswer.count == puzzle.answer.count {
-            // Wrong answer (but complete length)
-            let notification = UINotificationFeedbackGenerator()
-            notification.notificationOccurred(.error)
+            wrongAnswerSequence()
+        }
+    }
 
-            // Shake animation
-            withAnimation(.spring(response: 0.1, dampingFraction: 0.3)) {
-                wrongAnswerShake = true
-            }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                withAnimation(.spring(response: 0.1, dampingFraction: 0.3)) {
-                    wrongAnswerShake = false
-                }
-            }
+    func correctAnswerSequence() {
+        withAnimation(.easeInOut(duration: 0.3)) {
+            isCorrect = true
+        }
 
-            // Clear input after delay
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                currentInput = ""
+        progressManager.completePuzzle(puzzle)
+
+        UINotificationFeedbackGenerator().notificationOccurred(.success)
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+            withAnimation(.spring()) {
+                showingExplanation = true
             }
         }
     }
 
-    private func buildFullAnswer(from input: String) -> String {
-        var result = Array(repeating: "", count: puzzle.answer.count)
-        let answerArray = Array(puzzle.answer)
+    func wrongAnswerSequence() {
+        UINotificationFeedbackGenerator().notificationOccurred(.error)
 
-        // Fill anchors
-        for (index, letter) in anchorLettersDict {
-            result[index] = letter
+        withAnimation(.spring(response: 0.1, dampingFraction: 0.3)) {
+            wrongAnswerShake = true
         }
 
-        // Fill revealed
-        for index in revealedIndices {
-            if index < answerArray.count {
-                result[index] = String(answerArray[index])
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            withAnimation(.spring(response: 0.1, dampingFraction: 0.3)) {
+                wrongAnswerShake = false
             }
         }
 
-        // Fill remaining with input
-        var inputIndex = 0
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            currentInput = ""
+        }
+    }
+
+    func buildFullAnswer(from input: String) -> String {
+        var result = Array(repeating: "", count: puzzle.answer.count)
+        let answerArray = Array(puzzle.answer)
         let inputArray = Array(input)
-        for i in 0..<result.count {
-            if result[i].isEmpty {
-                if inputIndex < inputArray.count {
-                    result[i] = String(inputArray[inputIndex])
-                    inputIndex += 1
-                }
+
+        // Fill anchors + revealed
+        for (i, letter) in anchorLettersDict { result[i] = letter }
+        for i in revealedIndices where i < answerArray.count { result[i] = String(answerArray[i]) }
+
+        // Fill remaining with input letters (in order)
+        var inputIndex = 0
+        for i in 0..<result.count where result[i].isEmpty {
+            if inputIndex < inputArray.count {
+                result[i] = String(inputArray[inputIndex])
+                inputIndex += 1
             }
         }
 
         return result.joined()
     }
 
-    private func useHint() {
+    func useHint() {
+        // If hint not yet revealed, reveal the context tag
+        guard !hintRevealed else { return }
+
         guard progressManager.progress.canAfford(Constants.Economy.revealLetterCost) else {
-            // TODO: Show "not enough moonstones" message
+            UINotificationFeedbackGenerator().notificationOccurred(.error)
+            withAnimation(.spring()) {
+                showingInsufficientFunds = true
+            }
             return
         }
 
-        // Find an unrevealed, non-anchor index
-        for i in 0..<puzzle.answer.count {
-            if anchorLettersDict[i] == nil && !revealedIndices.contains(i) {
-                if progressManager.spend(Constants.Economy.revealLetterCost) {
-                    progressManager.useHint()
-                    _ = withAnimation {
-                        revealedIndices.insert(i)
-                    }
-                }
-                break
+        if progressManager.spend(Constants.Economy.revealLetterCost) {
+            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+            progressManager.useHint()
+            withAnimation(.spring()) {
+                hintRevealed = true
             }
         }
     }
-}
 
-// MARK: - Preview
+    func useRocketBoost() {
+        // Can only use once per puzzle
+        guard !rocketBoostUsed else { return }
 
-#Preview {
-    PuzzleView(
-        puzzle: Puzzle(
-            puzzleId: "preview_001",
-            theme: "forest",
-            galaxy: "nature",
-            contextTag: "Something You See at Night",
-            background: "enchanted_forest_01",
-            puzzleImage: "nature_forest_001",
-            answer: "MOONLIGHT",
-            letters: ["M", "O", "O", "N", "L", "I", "G", "H", "T"],
-            distractorLetters: ["S", "E", "A"],
-            difficulty: 1,
-            anchorLetters: [],
-            explanation: PuzzleExplanation(
-                breakdown: "Moon (crescent moon) + Light (lightbulb) = Moonlight",
-                logicType: .compoundWord
-            )
-        ),
-        onComplete: {},
-        onExit: {}
-    )
+        guard progressManager.progress.canAfford(Constants.Economy.rocketBoostCost) else {
+            UINotificationFeedbackGenerator().notificationOccurred(.error)
+            withAnimation(.spring()) {
+                showingInsufficientFunds = true
+            }
+            return
+        }
+
+        // Get the first letter index of the answer (skipping any anchor letters)
+        let answerArray = Array(puzzle.answer)
+        var firstLetterIndex: Int?
+
+        for i in 0..<answerArray.count {
+            if anchorLettersDict[i] == nil {
+                firstLetterIndex = i
+                break
+            }
+        }
+
+        guard let index = firstLetterIndex else { return }
+
+        if progressManager.spend(Constants.Economy.rocketBoostCost) {
+            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.6)) {
+                // Show the first letter in the slot as a hint - user still needs to input it
+                boostRevealedIndex = index
+                rocketBoostUsed = true
+            }
+        }
+    }
 }

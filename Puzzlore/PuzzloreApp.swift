@@ -42,10 +42,48 @@ class SceneDelegate: NSObject, UIWindowSceneDelegate {
 @main
 struct PuzzloreApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    @StateObject private var progressManager = ProgressManager.shared
+    @State private var showSplash = true
+    @State private var showOnboarding = false
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            ZStack {
+                ContentView()
+                    .opacity(showSplash || showOnboarding ? 0 : 1)
+
+                if showSplash {
+                    SplashScreenView()
+                        .transition(.opacity)
+                }
+
+                if showOnboarding {
+                    OnboardingView(onComplete: {
+                        progressManager.completeOnboarding()
+                        withAnimation(.easeOut(duration: 0.5)) {
+                            showOnboarding = false
+                        }
+                    })
+                    .transition(.opacity)
+                }
+            }
+            .onAppear {
+                // Show splash for 3 seconds, then check for onboarding
+                DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                    withAnimation(.easeOut(duration: 0.5)) {
+                        showSplash = false
+
+                        // Show onboarding if first launch
+                        if !progressManager.hasCompletedOnboarding {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                withAnimation(.easeIn(duration: 0.5)) {
+                                    showOnboarding = true
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }

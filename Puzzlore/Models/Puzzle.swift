@@ -59,10 +59,7 @@ struct PuzzleExplanation: Codable {
 /// A single rebus puzzle
 struct Puzzle: Codable, Identifiable {
     let puzzleId: String
-    let theme: String
-    let galaxy: String
     let contextTag: String
-    let background: String
     let puzzleImage: String // Single composed image of icons
     let answer: String
     let letters: [String]
@@ -71,11 +68,26 @@ struct Puzzle: Codable, Identifiable {
     let anchorLetters: [Int] // Indices of pre-filled letters
     let explanation: PuzzleExplanation
 
+    // These can be overridden per puzzle or inherited from constellation
+    let background: String?
+
     var id: String { puzzleId }
 
-    /// All letters available in the wheel (answer + distractors)
+    /// All letters available in the wheel (answer + distractors, max 10)
     var wheelLetters: [String] {
-        letters + distractorLetters
+        let maxLetters = 10
+        let answerLetters = letters
+
+        // If answer already has 10+ letters, just use answer letters
+        if answerLetters.count >= maxLetters {
+            return Array(answerLetters.prefix(maxLetters))
+        }
+
+        // Add as many distractors as we can fit up to 10 total
+        let remainingSlots = maxLetters - answerLetters.count
+        let distractorsToUse = Array(distractorLetters.prefix(remainingSlots))
+
+        return answerLetters + distractorsToUse
     }
 
     /// Currency reward based on difficulty
@@ -90,10 +102,7 @@ struct Puzzle: Codable, Identifiable {
 
     enum CodingKeys: String, CodingKey {
         case puzzleId = "puzzle_id"
-        case theme
-        case galaxy
         case contextTag = "context_tag"
-        case background
         case puzzleImage = "puzzle_image"
         case answer
         case letters
@@ -101,5 +110,6 @@ struct Puzzle: Codable, Identifiable {
         case difficulty
         case anchorLetters = "anchor_letters"
         case explanation
+        case background
     }
 }

@@ -11,11 +11,11 @@ import Foundation
 struct PlayerProgress: Codable {
     var completedPuzzles: Set<String>
     var currentPuzzle: String?
+    var currentConstellationOrder: Int // Current constellation order number (1-based)
     var currency: Int // Moonstones
-    var unlockedConstellations: Set<String>
-    var unlockedGalaxies: Set<String>
     var unlockedSoundscapes: Set<String>
     var unlockedThemes: Set<String>
+    var unlockedSpirits: Set<String> // Spirit IDs unlocked by completing constellations
     var hintsUsed: Int
     var totalPuzzlesSolved: Int
 
@@ -24,14 +24,19 @@ struct PlayerProgress: Codable {
         PlayerProgress(
             completedPuzzles: [],
             currentPuzzle: nil,
+            currentConstellationOrder: 1, // Start at first constellation
             currency: 100, // Starting moonstones
-            unlockedConstellations: ["forest"], // First constellation unlocked
-            unlockedGalaxies: ["nature"], // First galaxy unlocked
             unlockedSoundscapes: ["quiet_night"], // Default soundscape
             unlockedThemes: ["default"],
+            unlockedSpirits: [],
             hintsUsed: 0,
             totalPuzzlesSolved: 0
         )
+    }
+
+    /// Check if a spirit has been unlocked
+    func isSpiritUnlocked(_ spiritId: String) -> Bool {
+        unlockedSpirits.contains(spiritId)
     }
 
     /// Check if a puzzle has been completed
@@ -39,24 +44,24 @@ struct PlayerProgress: Codable {
         completedPuzzles.contains(puzzleId)
     }
 
-    /// Check if a constellation is unlocked
-    func isConstellationUnlocked(_ constellationId: String) -> Bool {
-        unlockedConstellations.contains(constellationId)
+    /// Check if a constellation is unlocked (based on linear order)
+    func isConstellationUnlocked(_ constellation: Constellation) -> Bool {
+        constellation.order <= currentConstellationOrder
     }
 
-    /// Check if a galaxy is unlocked
-    func isGalaxyUnlocked(_ galaxyId: String) -> Bool {
-        unlockedGalaxies.contains(galaxyId)
+    /// Check if a constellation order is unlocked
+    func isConstellationOrderUnlocked(_ order: Int) -> Bool {
+        order <= currentConstellationOrder
     }
 
     /// Count completed puzzles in a constellation
     func completedPuzzlesIn(constellation: Constellation) -> Int {
-        constellation.puzzleIds.filter { completedPuzzles.contains($0) }.count
+        constellation.puzzles.filter { completedPuzzles.contains($0.puzzleId) }.count
     }
 
-    /// Check if a constellation is complete (7/10 puzzles solved)
+    /// Check if a constellation is complete (threshold met)
     func isConstellationComplete(_ constellation: Constellation) -> Bool {
-        completedPuzzlesIn(constellation: constellation) >= constellation.puzzlesToComplete
+        completedPuzzlesIn(constellation: constellation) >= constellation.unlockThreshold
     }
 
     /// Check if player can afford a purchase
@@ -67,11 +72,11 @@ struct PlayerProgress: Codable {
     enum CodingKeys: String, CodingKey {
         case completedPuzzles = "completed_puzzles"
         case currentPuzzle = "current_puzzle"
+        case currentConstellationOrder = "current_constellation_order"
         case currency
-        case unlockedConstellations = "unlocked_constellations"
-        case unlockedGalaxies = "unlocked_galaxies"
         case unlockedSoundscapes = "unlocked_soundscapes"
         case unlockedThemes = "unlocked_themes"
+        case unlockedSpirits = "unlocked_spirits"
         case hintsUsed = "hints_used"
         case totalPuzzlesSolved = "total_puzzles_solved"
     }

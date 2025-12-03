@@ -14,6 +14,7 @@ struct AnswerSlotsView: View {
     let revealedIndices: Set<Int> // Indices revealed via hints
     let correctAnswer: String
     var isCorrect: Bool = false  // When true, show green success state
+    var boostHintIndex: Int? = nil  // Index where boost hint letter is shown (doesn't affect input)
 
     @State private var shakeOffset: CGFloat = 0
     @State private var showingCorrect: Bool = false
@@ -35,38 +36,52 @@ struct AnswerSlotsView: View {
         let letter = letterFor(index: index)
         let isAnchor = anchorLetters[index] != nil
         let isRevealed = revealedIndices.contains(index)
+        let isBoostHint = boostHintIndex == index
         let isFilled = letter != nil
 
         ZStack {
-            // Slot background - frosted glass for empty slots
-            if !isFilled && !isAnchor && !isRevealed && !isCorrect {
+            // Base white frosted background (always present)
+            RoundedRectangle(cornerRadius: 8)
+                .fill(PuzzleImageView.boxBackground)
+
+            // Color overlay for filled/hint states
+            if isCorrect {
                 RoundedRectangle(cornerRadius: 8)
-                    .fill(.thinMaterial.opacity(0.7))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color.white.opacity(0.4), lineWidth: 1.5)
-                    )
-            } else {
+                    .fill(Color.green.opacity(0.5))
+            } else if isAnchor || isRevealed || isBoostHint {
                 RoundedRectangle(cornerRadius: 8)
-                    .fill(slotBackgroundColor(isAnchor: isAnchor, isRevealed: isRevealed, isFilled: isFilled))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(slotBorderColor(isAnchor: isAnchor, isRevealed: isRevealed, isFilled: isFilled), lineWidth: 2)
-                    )
+                    .fill(Constants.Colors.gold.opacity(0.3))
+            } else if isFilled {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Constants.Colors.starCyan.opacity(0.35))
             }
 
-            // Letter
+            // Border stroke
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(slotBorderColor(isAnchor: isAnchor, isRevealed: isRevealed, isBoostHint: isBoostHint, isFilled: isFilled), lineWidth: isFilled || isAnchor || isRevealed || isBoostHint || isCorrect ? 2 : 1)
+
+            // Letter (show boost hint if no user input yet for this slot)
             if let letter = letter {
                 Text(letter)
                     .font(.system(size: slotSize * 0.6, weight: .bold, design: .rounded))
-                    .foregroundColor(letterColor(isAnchor: isAnchor, isRevealed: isRevealed))
+                    .foregroundColor(letterColor(isAnchor: isAnchor, isRevealed: isRevealed, isBoostHint: isBoostHint))
+            } else if isBoostHint {
+                // Show boost hint letter when slot is empty
+                let answerArray = Array(correctAnswer)
+                if index < answerArray.count {
+                    Text(String(answerArray[index]))
+                        .font(.system(size: slotSize * 0.6, weight: .bold, design: .rounded))
+                        .foregroundColor(.black)
+                }
             }
         }
         .frame(width: slotSize, height: slotSize * 1.2)
+        .shadow(color: slotGlowColor(isAnchor: isAnchor, isRevealed: isRevealed, isBoostHint: isBoostHint, isFilled: isFilled), radius: 8, x: 0, y: 0)
     }
 
     private func letterFor(index: Int) -> String? {
         // Priority: anchor letters > revealed letters > current input
+        // Note: boostHintIndex does NOT affect input placement - it's just a visual hint
         if let anchor = anchorLetters[index] {
             return anchor
         }
@@ -79,6 +94,7 @@ struct AnswerSlotsView: View {
         }
 
         // Current input fills remaining slots left-to-right, skipping anchors/revealed
+        // (boostHintIndex is NOT skipped - user still needs to input that letter)
         var inputIndex = 0
         for i in 0..<answerLength {
             if anchorLetters[i] == nil && !revealedIndices.contains(i) {
@@ -98,40 +114,53 @@ struct AnswerSlotsView: View {
 
     // MARK: - Colors
 
-    private func slotBackgroundColor(isAnchor: Bool, isRevealed: Bool, isFilled: Bool) -> Color {
+    private func slotBackgroundColor(isAnchor: Bool, isRevealed: Bool, isBoostHint: Bool, isFilled: Bool) -> Color {
         if isCorrect {
             return Color.green.opacity(0.5)
         }
-        if isAnchor || isRevealed {
-            return Constants.Colors.gold.opacity(0.2)
+        if isAnchor || isRevealed || isBoostHint {
+            return Constants.Colors.gold.opacity(0.3)
         }
         if isFilled {
-            return Constants.Colors.starCyan.opacity(0.2)
+            return Constants.Colors.starCyan.opacity(0.35)
         }
         return .clear // Use clear for frosted glass effect
     }
 
-    private func slotBorderColor(isAnchor: Bool, isRevealed: Bool, isFilled: Bool) -> Color {
+    private func slotBorderColor(isAnchor: Bool, isRevealed: Bool, isBoostHint: Bool, isFilled: Bool) -> Color {
         if isCorrect {
             return Color.green
         }
-        if isAnchor || isRevealed {
-            return Constants.Colors.gold.opacity(0.8)
+        if isAnchor || isRevealed || isBoostHint {
+            return Constants.Colors.gold
         }
         if isFilled {
-            return Constants.Colors.starCyan.opacity(0.8)
+            return Constants.Colors.starCyan
         }
-        return Constants.Colors.gold.opacity(0.3)
+        return Color.white.opacity(0.5)
     }
 
-    private func letterColor(isAnchor: Bool, isRevealed: Bool) -> Color {
+    private func slotGlowColor(isAnchor: Bool, isRevealed: Bool, isBoostHint: Bool, isFilled: Bool) -> Color {
+        if isCorrect {
+            return Color.green.opacity(0.6)
+        }
+        if isAnchor || isRevealed || isBoostHint {
+            return Constants.Colors.gold.opacity(0.7)
+        }
+        if isFilled {
+            return Constants.Colors.starCyan.opacity(0.7)
+        }
+        return Color.clear
+    }
+
+    private func letterColor(isAnchor: Bool, isRevealed: Bool, isBoostHint: Bool) -> Color {
         if isCorrect {
             return .white
         }
-        if isAnchor || isRevealed {
+        if isAnchor || isRevealed || isBoostHint {
             return Constants.Colors.gold
         }
-        return .white
+        return .black
     }
 
     // MARK: - Animations

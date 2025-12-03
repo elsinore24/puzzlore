@@ -17,7 +17,7 @@ struct LetterWheelView: View {
     @State private var currentDragLocation: CGPoint? = nil
     @State private var wheelRotation: Double = 0
 
-    private let letterSize: CGFloat = 52
+    private let letterSize: CGFloat = 58
     private let wheelRadius: CGFloat = 110
 
     var body: some View {
@@ -25,18 +25,16 @@ struct LetterWheelView: View {
             let center = CGPoint(x: geometry.size.width / 2, y: geometry.size.height / 2)
 
             ZStack {
-                // Wheel background - frosted glass with glow
+                // Wheel background - dark neutral with subtle glow
                 Circle()
-                    .fill(.thinMaterial.opacity(0.7))
+                    .fill(PuzzleImageView.boxBackground)
                     .frame(width: wheelRadius * 2 + letterSize, height: wheelRadius * 2 + letterSize)
                     .overlay(
                         Circle()
-                            .stroke(Color.white.opacity(0.35), lineWidth: 1)
+                            .stroke(Color.white.opacity(0.15), lineWidth: 1)
                     )
-                    .shadow(color: Color.white.opacity(0.4), radius: 15, x: 0, y: 0)
-                    .shadow(color: Color.white.opacity(0.3), radius: 30, x: 0, y: 0)
-                    .shadow(color: Constants.Colors.starCyan.opacity(0.25), radius: 50, x: 0, y: 0)
-                    .shadow(color: Constants.Colors.starCyan.opacity(0.15), radius: 80, x: 0, y: 0)
+                    .shadow(color: Color.white.opacity(0.15), radius: 15, x: 0, y: 0)
+                    .shadow(color: Constants.Colors.starCyan.opacity(0.1), radius: 30, x: 0, y: 0)
                     .position(center)
 
                 // Connection lines between selected letters
@@ -192,15 +190,22 @@ struct LetterNode: View {
     let size: CGFloat
 
     var body: some View {
-        Text(letter)
-            .font(.system(size: size * 0.6, weight: .semibold, design: .serif))
-            .foregroundColor(isSelected ? Constants.Colors.starCyan : .white.opacity(0.9))
-            .shadow(color: .white.opacity(0.3), radius: 4, x: 0, y: 0)
-            .shadow(color: isSelected ? Constants.Colors.starCyan.opacity(0.9) : .white.opacity(0.15), radius: 8, x: 0, y: 0)
-            .shadow(color: isSelected ? Constants.Colors.starCyan.opacity(0.6) : .clear, radius: 15, x: 0, y: 0)
-            .frame(width: size, height: size)
-            .scaleEffect(isSelected ? 1.2 : 1.0)
-            .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isSelected)
+        ZStack {
+            // Selection circle background
+            if isSelected {
+                Circle()
+                    .fill(Constants.Colors.starCyan)
+                    .frame(width: size * 0.9, height: size * 0.9)
+                    .shadow(color: Constants.Colors.starCyan.opacity(0.8), radius: 8, x: 0, y: 0)
+            }
+
+            Text(letter)
+                .font(.system(size: size * 0.65, weight: .bold, design: .rounded))
+                .foregroundColor(isSelected ? .white : .black)
+        }
+        .frame(width: size, height: size)
+        .scaleEffect(isSelected ? 1.15 : 1.0)
+        .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isSelected)
     }
 }
 

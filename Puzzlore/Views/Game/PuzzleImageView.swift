@@ -7,18 +7,21 @@
 
 import SwiftUI
 
-/// Frosted glass container displaying the puzzle image
+/// Light frosted container displaying the puzzle image
 struct PuzzleImageView: View {
     let imageName: String
 
+    /// Light frosted background that works with any image
+    static let boxBackground = Color.white.opacity(0.82)
+
     var body: some View {
         ZStack {
-            // Frosted glass background
-            RoundedRectangle(cornerRadius: 20)
-                .fill(.thinMaterial.opacity(0.8))
+            // Light frosted background (slightly more opaque than letter boxes)
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.white.opacity(0.88))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 20)
-                        .stroke(Color.white.opacity(0.5), lineWidth: 1.5)
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.white.opacity(0.5), lineWidth: 1)
                 )
 
             // Puzzle image

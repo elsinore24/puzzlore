@@ -1,0 +1,173 @@
+{
+  "constellation_id": "agon",
+  "name": "Agon",
+  "order": 2,
+  "unlock_threshold": 7,
+  "background": "agon_bg_01",
+  "background_video": "agon_bg_video",
+  "star_positions": [
+    { "puzzle_index": 0, "x": 0.15, "y": 0.12 },
+    { "puzzle_index": 1, "x": 0.30, "y": 0.20 },
+    { "puzzle_index": 2, "x": 0.12, "y": 0.35 },
+    { "puzzle_index": 3, "x": 0.50, "y": 0.10 },
+    { "puzzle_index": 4, "x": 0.50, "y": 0.30 },
+    { "puzzle_index": 5, "x": 0.70, "y": 0.20 },
+    { "puzzle_index": 6, "x": 0.85, "y": 0.12 },
+    { "puzzle_index": 7, "x": 0.88, "y": 0.35 },
+    { "puzzle_index": 8, "x": 0.35, "y": 0.50 },
+    { "puzzle_index": 9, "x": 0.65, "y": 0.50 }
+  ],
+  "connections": [
+    [0, 1], [1, 4], [0, 2], [2, 8], [3, 4], [4, 5], [5, 6], [6, 7], [8, 4], [4, 9], [9, 7]
+  ],
+  "spirit_reward": {
+    "spirit_id": "spirit_agon",
+    "name": "Spirit of Agon",
+    "rarity": "rare",
+    "lore": "An ancient spirit awakened from the realm of Agon, guardian of forgotten wisdom...",
+    "sticker_image": "spirit_agon",
+    "silhouette_path": null
+  },
+  "puzzles": [
+    {
+      "puzzle_id": "agon_001",
+      "context_tag": "Not expected to win",
+      "puzzle_image": "agon_001",
+      "answer": "UNDERDOG",
+      "letters": ["U", "N", "D", "E", "R", "D", "O", "G"],
+      "distractor_letters": [],
+      "difficulty": 1,
+      "anchor_letters": [],
+      "explanation": {
+        "breakdown": "UNDER + DOG = UNDERDOG (someone not expected to win)",
+        "logic_type": "compound_word"
+      }
+    },
+    {
+      "puzzle_id": "agon_002",
+      "context_tag": "Unlikely to succeed",
+      "puzzle_image": "agon_002",
+      "answer": "LONGSHOT",
+      "letters": ["L", "O", "N", "G", "S", "H", "O", "T"],
+      "distractor_letters": [],
+      "difficulty": 1,
+      "anchor_letters": [],
+      "explanation": {
+        "breakdown": "LONG + SHOT = LONGSHOT (unlikely to succeed)",
+        "logic_type": "compound_word"
+      }
+    },
+    {
+      "puzzle_id": "agon_003",
+      "context_tag": "Something unexpected",
+      "puzzle_image": "agon_003",
+      "answer": "CURVEBALL",
+      "letters": ["C", "U", "R", "V", "E", "B", "A", "L", "L"],
+      "distractor_letters": [],
+      "difficulty": 1,
+      "anchor_letters": [],
+      "explanation": {
+        "breakdown": "CURVE + BALL = CURVEBALL (something unexpected)",
+        "logic_type": "compound_word"
+      }
+    },
+    {
+      "puzzle_id": "agon_004",
+      "context_tag": "Best seat in the house",
+      "puzzle_image": "agon_004",
+      "answer": "RINGSIDE",
+      "letters": ["R", "I", "N", "G", "S", "I", "D", "E"],
+      "distractor_letters": [],
+      "difficulty": 1,
+      "anchor_letters": [],
+      "explanation": {
+        "breakdown": "RING + SIDE = RINGSIDE (best seat in the house)",
+        "logic_type": "compound_word"
+      }
+    },
+    {
+      "puzzle_id": "agon_005",
+      "context_tag": "Life jacket required",
+      "puzzle_image": "agon_005",
+      "answer": "WAKEBOARDING",
+      "letters": ["W", "A", "K", "E", "B", "O", "A", "R", "D", "I", "N", "G"],
+      "distractor_letters": [],
+      "difficulty": 1,
+      "anchor_letters": [],
+      "explanation": {
+        "breakdown": "WAKE + BOARDING = WAKEBOARDING (water sport requiring a life jacket)",
+        "logic_type": "compound_word"
+      }
+    },
+    {
+      "puzzle_id": "agon_006",
+      "context_tag": "Redirect, don't resist",
+      "puzzle_image": "agon_006",
+      "answer": "AIKIDO",
+      "letters": ["A", "I", "K", "I", "D", "O"],
+      "distractor_letters": [],
+      "difficulty": 1,
+      "anchor_letters": [],
+      "explanation": {
+        "breakdown": "AIKIDO - Japanese martial art focused on redirecting an attacker's energy",
+        "logic_type": "compound_word"
+      }
+    },
+    {
+      "puzzle_id": "agon_007",
+      "context_tag": "Where fighters meet",
+      "puzzle_image": "agon_007",
+      "answer": "BOXINGRING",
+      "letters": ["B", "O", "X", "I", "N", "G", "R", "I", "N", "G"],
+      "distractor_letters": [],
+      "difficulty": 2,
+      "anchor_letters": [],
+      "explanation": {
+        "breakdown": "BOXING + RING = BOXING RING (where fighters meet)",
+        "logic_type": "compound_word"
+      }
+    },
+    {
+      "puzzle_id": "agon_008",
+      "context_tag": "Puzzle 8",
+      "puzzle_image": "agon_008",
+      "answer": "PLACEHOLDER",
+      "letters": ["P", "L", "A", "C", "E", "H", "O", "L", "D", "E", "R"],
+      "distractor_letters": [],
+      "difficulty": 2,
+      "anchor_letters": [],
+      "explanation": {
+        "breakdown": "Placeholder puzzle",
+        "logic_type": "compound_word"
+      }
+    },
+    {
+      "puzzle_id": "agon_009",
+      "context_tag": "Puzzle 9",
+      "puzzle_image": "agon_009",
+      "answer": "PLACEHOLDER",
+      "letters": ["P", "L", "A", "C", "E", "H", "O", "L", "D", "E", "R"],
+      "distractor_letters": [],
+      "difficulty": 2,
+      "anchor_letters": [],
+      "explanation": {
+        "breakdown": "Placeholder puzzle",
+        "logic_type": "compound_word"
+      }
+    },
+    {
+      "puzzle_id": "agon_010",
+      "context_tag": "Puzzle 10",
+      "puzzle_image": "agon_010",
+      "answer": "PLACEHOLDER",
+      "letters": ["P", "L", "A", "C", "E", "H", "O", "L", "D", "E", "R"],
+      "distractor_letters": [],
+      "difficulty": 2,
+      "anchor_letters": [],
+      "explanation": {
+        "breakdown": "Placeholder puzzle",
+        "logic_type": "compound_word"
+      }
+    }
+  ]
+}

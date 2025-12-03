@@ -7,132 +7,171 @@
 
 import Foundation
 
-/// Handles loading puzzle and galaxy data from JSON files
+/// Handles loading constellation and puzzle data from JSON files
 class PuzzleLoader {
     static let shared = PuzzleLoader()
 
-    private var puzzlesCache: [Puzzle]?
-    private var galaxiesCache: [Galaxy]?
-    private var puzzlesByIdCache: [String: Puzzle]?
+    private var constellationsCache: [Constellation]?
+    private var puzzlesByIdCache: [String: (puzzle: Puzzle, constellation: Constellation)]?
 
     private init() {}
 
-    // MARK: - Puzzle Loading
+    // MARK: - Constellation Loading
 
-    /// Loads all puzzles from the puzzles.json file
-    func loadPuzzles() -> [Puzzle] {
-        if let cached = puzzlesCache {
+    /// Loads all constellations from the constellations folder, sorted by order
+    func loadConstellations() -> [Constellation] {
+        if let cached = constellationsCache {
             return cached
         }
 
-        guard let url = Bundle.main.url(forResource: Constants.Files.puzzlesJSON, withExtension: "json"),
-              let data = try? Data(contentsOf: url) else {
-            print("Error: Could not find puzzles.json")
+        var constellations: [Constellation] = []
+
+        // Get all JSON files from the constellations folder
+        guard let resourcePath = Bundle.main.resourcePath else {
+            print("Error: Could not find resource path")
             return []
         }
 
-        do {
-            let decoder = JSONDecoder()
-            let container = try decoder.decode(PuzzleContainer.self, from: data)
-            puzzlesCache = container.puzzles
-            buildPuzzleIdCache()
-            return container.puzzles
-        } catch {
-            print("Error decoding puzzles: \(error)")
-            return []
+        let constellationsPath = (resourcePath as NSString).appendingPathComponent("constellations")
+        let fileManager = FileManager.default
+
+        // Try to get files from the constellations directory
+        if let files = try? fileManager.contentsOfDirectory(atPath: constellationsPath) {
+            let jsonFiles = files.filter { $0.hasSuffix(".json") }.sorted()
+
+            for file in jsonFiles {
+                let filePath = (constellationsPath as NSString).appendingPathComponent(file)
+                if let data = fileManager.contents(atPath: filePath) {
+                    do {
+                        let decoder = JSONDecoder()
+                        let constellation = try decoder.decode(Constellation.self, from: data)
+                        constellations.append(constellation)
+                    } catch {
+                        print("Error decoding \(file): \(error)")
+                    }
+                }
+            }
         }
+
+        // Fallback: Try loading from bundle resources directly
+        if constellations.isEmpty {
+            // Try to find all JSON files in the constellations subdirectory
+            if let urls = Bundle.main.urls(forResourcesWithExtension: "json", subdirectory: "constellations") {
+                for url in urls.sorted(by: { $0.lastPathComponent < $1.lastPathComponent }) {
+                    if let data = try? Data(contentsOf: url) {
+                        do {
+                            let constellation = try JSONDecoder().decode(Constellation.self, from: data)
+                            if !constellations.contains(where: { $0.constellationId == constellation.constellationId }) {
+                                constellations.append(constellation)
+                            }
+                        } catch {
+                            print("Error decoding \(url.lastPathComponent): \(error)")
+                        }
+                    }
+                }
+            }
+
+            // If still empty, try known constellation file names
+            if constellations.isEmpty {
+                let knownFiles = [
+                    "01_enchanted_woods",
+                    "02_agon"
+                ]
+
+                for fileName in knownFiles {
+                    if let url = Bundle.main.url(forResource: fileName, withExtension: "json", subdirectory: "constellations") ??
+                       Bundle.main.url(forResource: fileName, withExtension: "json"),
+                       let data = try? Data(contentsOf: url) {
+                        do {
+                            let constellation = try JSONDecoder().decode(Constellation.self, from: data)
+                            if !constellations.contains(where: { $0.constellationId == constellation.constellationId }) {
+                                constellations.append(constellation)
+                            }
+                        } catch {
+                            print("Error decoding \(fileName): \(error)")
+                        }
+                    }
+                }
+            }
+        }
+
+        // Sort by order
+        constellations.sort { $0.order < $1.order }
+        constellationsCache = constellations
+        buildPuzzleIdCache()
+
+        return constellations
+    }
+
+    /// Gets a specific constellation by ID
+    func constellation(withId id: String) -> Constellation? {
+        loadConstellations().first { $0.constellationId == id }
+    }
+
+    /// Gets constellation by order number
+    func constellation(atOrder order: Int) -> Constellation? {
+        loadConstellations().first { $0.order == order }
+    }
+
+    // MARK: - Puzzle Access
+
+    /// Gets all puzzles across all constellations (flattened, in order)
+    func loadAllPuzzles() -> [Puzzle] {
+        loadConstellations().flatMap { $0.puzzles }
     }
 
     /// Gets a specific puzzle by ID
     func puzzle(withId id: String) -> Puzzle? {
         if puzzlesByIdCache == nil {
-            _ = loadPuzzles()
+            _ = loadConstellations()
         }
-        return puzzlesByIdCache?[id]
+        return puzzlesByIdCache?[id]?.puzzle
+    }
+
+    /// Gets the constellation containing a specific puzzle
+    func constellation(containingPuzzle puzzleId: String) -> Constellation? {
+        if puzzlesByIdCache == nil {
+            _ = loadConstellations()
+        }
+        return puzzlesByIdCache?[puzzleId]?.constellation
     }
 
     /// Gets puzzles for a specific constellation
-    func puzzles(forConstellation constellation: Constellation) -> [Puzzle] {
-        let allPuzzles = loadPuzzles()
-        return constellation.puzzleIds.compactMap { puzzleId in
-            allPuzzles.first { $0.puzzleId == puzzleId }
-        }
+    func puzzles(forConstellationId constellationId: String) -> [Puzzle] {
+        constellation(withId: constellationId)?.puzzles ?? []
     }
 
-    /// Gets puzzles filtered by galaxy
-    func puzzles(forGalaxy galaxyId: String) -> [Puzzle] {
-        loadPuzzles().filter { $0.galaxy == galaxyId }
-    }
-
-    /// Gets puzzles filtered by theme
-    func puzzles(forTheme theme: String) -> [Puzzle] {
-        loadPuzzles().filter { $0.theme == theme }
-    }
-
-    // MARK: - Galaxy Loading
-
-    /// Loads all galaxies from the galaxies.json file
-    func loadGalaxies() -> [Galaxy] {
-        if let cached = galaxiesCache {
-            return cached
-        }
-
-        guard let url = Bundle.main.url(forResource: Constants.Files.galaxiesJSON, withExtension: "json"),
-              let data = try? Data(contentsOf: url) else {
-            print("Error: Could not find galaxies.json")
-            return []
-        }
-
-        do {
-            let decoder = JSONDecoder()
-            let container = try decoder.decode(GalaxyData.self, from: data)
-            galaxiesCache = container.galaxies
-            return container.galaxies
-        } catch {
-            print("Error decoding galaxies: \(error)")
-            return []
-        }
-    }
-
-    /// Gets a specific galaxy by ID
-    func galaxy(withId id: String) -> Galaxy? {
-        loadGalaxies().first { $0.galaxyId == id }
-    }
-
-    /// Gets a specific constellation by ID
-    func constellation(withId id: String) -> Constellation? {
-        for galaxy in loadGalaxies() {
-            if let constellation = galaxy.constellations.first(where: { $0.constellationId == id }) {
-                return constellation
+    /// Gets the next uncompleted puzzle across all constellations
+    func nextUncompletedPuzzle(completedPuzzleIds: Set<String>) -> (puzzle: Puzzle, constellation: Constellation)? {
+        for constellation in loadConstellations() {
+            if let puzzle = constellation.puzzles.first(where: { !completedPuzzleIds.contains($0.puzzleId) }) {
+                return (puzzle, constellation)
             }
         }
         return nil
     }
 
-    /// Gets the galaxy that contains a specific constellation
-    func galaxy(containingConstellation constellationId: String) -> Galaxy? {
-        loadGalaxies().first { galaxy in
-            galaxy.constellations.contains { $0.constellationId == constellationId }
-        }
+    /// Gets the effective background for a puzzle (puzzle override or constellation default)
+    func effectiveBackground(for puzzle: Puzzle, in constellation: Constellation) -> String {
+        puzzle.background ?? constellation.background
     }
 
     // MARK: - Private Helpers
 
     private func buildPuzzleIdCache() {
-        guard let puzzles = puzzlesCache else { return }
-        puzzlesByIdCache = Dictionary(uniqueKeysWithValues: puzzles.map { ($0.puzzleId, $0) })
+        guard let constellations = constellationsCache else { return }
+        var cache: [String: (puzzle: Puzzle, constellation: Constellation)] = [:]
+        for constellation in constellations {
+            for puzzle in constellation.puzzles {
+                cache[puzzle.puzzleId] = (puzzle, constellation)
+            }
+        }
+        puzzlesByIdCache = cache
     }
 
     /// Clears all cached data (useful for testing or reloading)
     func clearCache() {
-        puzzlesCache = nil
-        galaxiesCache = nil
+        constellationsCache = nil
         puzzlesByIdCache = nil
     }
-}
-
-// MARK: - JSON Containers
-
-private struct PuzzleContainer: Codable {
-    let puzzles: [Puzzle]
 }

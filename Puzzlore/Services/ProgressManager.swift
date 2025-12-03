@@ -13,6 +13,15 @@ class ProgressManager: ObservableObject {
 
     @Published private(set) var progress: PlayerProgress
 
+    /// Called when a constellation is completed for the first time (with spirit reward)
+    var onConstellationCompleted: ((Constellation) -> Void)?
+
+    /// The most recently unlocked constellation (threshold reached, for showing unlock popup)
+    @Published var pendingUnlockConstellation: Constellation?
+
+    /// The most recently FULLY completed constellation (all puzzles done, for showing spirit reward animation)
+    @Published var pendingRewardConstellation: Constellation?
+
     private let encoder = JSONEncoder()
     private let decoder = JSONDecoder()
 
@@ -55,10 +64,17 @@ class ProgressManager: ObservableObject {
         progress.currency += puzzle.moonstoneReward
 
         // Check if this completes a constellation
-        if let constellation = PuzzleLoader.shared.constellation(withId: puzzle.theme) {
+        if let constellation = PuzzleLoader.shared.constellation(containingPuzzle: puzzle.puzzleId) {
             let completedCount = progress.completedPuzzlesIn(constellation: constellation)
-            if completedCount == constellation.puzzlesToComplete {
-                completeConstellation(constellation)
+
+            // Check if we just hit the unlock threshold
+            if completedCount == constellation.unlockThreshold {
+                unlockNextConstellation(from: constellation)
+            }
+
+            // Check if we fully completed all puzzles in the constellation
+            if completedCount == constellation.totalPuzzles {
+                fullyCompleteConstellation(constellation)
             }
         }
 
@@ -73,46 +89,61 @@ class ProgressManager: ObservableObject {
 
     // MARK: - Constellation Progress
 
-    private func completeConstellation(_ constellation: Constellation) {
-        progress.currency += Constants.Economy.constellationBonus
+    /// Called when threshold (e.g., 7/10) is reached - unlocks next constellation
+    private func unlockNextConstellation(from constellation: Constellation) {
+        let wasAlreadyUnlocked = progress.currentConstellationOrder > constellation.order
 
-        // Unlock next constellation if there is one
-        if let galaxy = PuzzleLoader.shared.galaxy(containingConstellation: constellation.constellationId) {
-            if let currentIndex = galaxy.constellations.firstIndex(where: { $0.constellationId == constellation.constellationId }),
-               currentIndex + 1 < galaxy.constellations.count {
-                let nextConstellation = galaxy.constellations[currentIndex + 1]
-                progress.unlockedConstellations.insert(nextConstellation.constellationId)
+        if !wasAlreadyUnlocked {
+            // Award threshold bonus
+            progress.currency += Constants.Economy.constellationBonus
+
+            // Unlock next constellation (linear progression)
+            let nextOrder = constellation.order + 1
+            if progress.currentConstellationOrder < nextOrder {
+                progress.currentConstellationOrder = nextOrder
             }
+
+            // Set pending unlock for UI to show "New Constellation Unlocked!" popup
+            pendingUnlockConstellation = constellation
         }
     }
 
-    /// Checks if a puzzle is available to play (adjacent to a completed puzzle)
-    func isPuzzleAvailable(_ puzzleId: String, in constellation: Constellation) -> Bool {
-        // First puzzle is always available if constellation is unlocked
-        if let firstPuzzle = constellation.puzzleIds.first, puzzleId == firstPuzzle {
-            return progress.isConstellationUnlocked(constellation.constellationId)
+    /// Called when ALL puzzles in constellation are complete (10/10) - awards spirit
+    private func fullyCompleteConstellation(_ constellation: Constellation) {
+        // Only award spirit once
+        if let spirit = constellation.spiritReward,
+           !progress.unlockedSpirits.contains(spirit.spiritId) {
+            progress.unlockedSpirits.insert(spirit.spiritId)
+
+            // Set pending reward for UI to show full spirit animation
+            pendingRewardConstellation = constellation
+            onConstellationCompleted?(constellation)
         }
+    }
 
-        // Check if any connected completed puzzle unlocks this one
-        guard let puzzleIndex = constellation.puzzleIds.firstIndex(of: puzzleId) else { return false }
+    /// Clears the pending unlock popup after it's been shown
+    func clearPendingUnlock() {
+        pendingUnlockConstellation = nil
+    }
 
-        for connection in constellation.connections {
-            let (a, b) = (connection[0], connection[1])
-            if a == puzzleIndex {
-                if let connectedId = constellation.puzzleIds[safe: b],
-                   progress.isPuzzleCompleted(connectedId) {
-                    return true
-                }
-            }
-            if b == puzzleIndex {
-                if let connectedId = constellation.puzzleIds[safe: a],
-                   progress.isPuzzleCompleted(connectedId) {
-                    return true
-                }
-            }
+    /// Clears the pending reward animation after it's been shown
+    func clearPendingReward() {
+        pendingRewardConstellation = nil
+    }
+
+    /// Unlocks a spirit (for manual unlocking if needed)
+    func unlockSpirit(_ spiritId: String) {
+        progress.unlockedSpirits.insert(spiritId)
+        saveProgress()
+    }
+
+    /// Checks if a puzzle is available to play
+    /// In V1: All puzzles in unlocked constellations are available
+    func isPuzzleAvailable(_ puzzle: Puzzle) -> Bool {
+        guard let constellation = PuzzleLoader.shared.constellation(containingPuzzle: puzzle.puzzleId) else {
+            return false
         }
-
-        return false
+        return progress.isConstellationUnlocked(constellation)
     }
 
     // MARK: - Economy
@@ -151,10 +182,43 @@ class ProgressManager: ObservableObject {
         saveProgress()
     }
 
-    /// Unlocks a galaxy
-    func unlockGalaxy(_ galaxyId: String) {
-        progress.unlockedGalaxies.insert(galaxyId)
-        saveProgress()
+    // MARK: - Onboarding
+
+    /// Whether the user has completed onboarding
+    var hasCompletedOnboarding: Bool {
+        get { UserDefaults.standard.bool(forKey: "hasCompletedOnboarding") }
+        set { UserDefaults.standard.set(newValue, forKey: "hasCompletedOnboarding") }
+    }
+
+    /// Marks onboarding as completed
+    func completeOnboarding() {
+        hasCompletedOnboarding = true
+    }
+
+    // MARK: - Settings
+
+    /// Sound effects enabled
+    var soundEnabled: Bool {
+        get { UserDefaults.standard.object(forKey: "soundEnabled") as? Bool ?? true }
+        set { UserDefaults.standard.set(newValue, forKey: "soundEnabled") }
+    }
+
+    /// Music enabled
+    var musicEnabled: Bool {
+        get { UserDefaults.standard.object(forKey: "musicEnabled") as? Bool ?? true }
+        set { UserDefaults.standard.set(newValue, forKey: "musicEnabled") }
+    }
+
+    /// Haptic feedback enabled
+    var hapticsEnabled: Bool {
+        get { UserDefaults.standard.object(forKey: "hapticsEnabled") as? Bool ?? true }
+        set { UserDefaults.standard.set(newValue, forKey: "hapticsEnabled") }
+    }
+
+    /// Notifications enabled
+    var notificationsEnabled: Bool {
+        get { UserDefaults.standard.object(forKey: "notificationsEnabled") as? Bool ?? false }
+        set { UserDefaults.standard.set(newValue, forKey: "notificationsEnabled") }
     }
 
     // MARK: - Debug / Testing
@@ -165,14 +229,16 @@ class ProgressManager: ObservableObject {
         saveProgress()
     }
 
+    /// Resets onboarding (for testing)
+    func resetOnboarding() {
+        hasCompletedOnboarding = false
+    }
+
     /// Unlocks all content (for testing)
     func unlockAllContent() {
-        let galaxies = PuzzleLoader.shared.loadGalaxies()
-        for galaxy in galaxies {
-            progress.unlockedGalaxies.insert(galaxy.galaxyId)
-            for constellation in galaxy.constellations {
-                progress.unlockedConstellations.insert(constellation.constellationId)
-            }
+        let constellations = PuzzleLoader.shared.loadConstellations()
+        if let lastConstellation = constellations.last {
+            progress.currentConstellationOrder = lastConstellation.order
         }
         progress.currency = 10000
         saveProgress()

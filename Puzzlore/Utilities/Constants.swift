@@ -29,6 +29,7 @@ enum Constants {
 
         // Spending
         static let revealLetterCost = 25
+        static let rocketBoostCost = 30
         static let explainIconCost = 50
         static let skipPuzzleCost = 100
         static let soundscapeCost = 500
@@ -90,8 +91,7 @@ enum Constants {
 
     // MARK: - File Names
     enum Files {
-        static let puzzlesJSON = "puzzles"
-        static let galaxiesJSON = "galaxies"
         static let storeItemsJSON = "store_items"
+        static let constellationsFolder = "constellations"
     }
 }

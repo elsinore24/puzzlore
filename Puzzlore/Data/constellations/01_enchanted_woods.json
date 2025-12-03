@@ -1,0 +1,157 @@
+{
+  "constellation_id": "enchanted_woods",
+  "name": "Enchanted Woods",
+  "order": 1,
+  "unlock_threshold": 7,
+  "background": "enchanted_forest_01",
+  "spirit_reward": {
+    "spirit_id": "spirit_fox",
+    "name": "Spirit Fox",
+    "rarity": "common",
+    "lore": "The ancient spirit of the Enchanted Woods, awakened by those who solve its mysteries...",
+    "sticker_image": "spirit_fox",
+    "silhouette_path": null
+  },
+  "puzzles": [
+    {
+      "puzzle_id": "enchanted_woods_001",
+      "context_tag": "Something You See at Night",
+      "puzzle_image": "nature_forest_001",
+      "answer": "MOONLIGHT",
+      "letters": ["M", "O", "O", "N", "L", "I", "G", "H", "T"],
+      "distractor_letters": ["S", "E", "A"],
+      "difficulty": 1,
+      "anchor_letters": [],
+      "explanation": {
+        "breakdown": "Moon (crescent moon) + Light (lightbulb) = Moonlight",
+        "logic_type": "compound_word"
+      }
+    },
+    {
+      "puzzle_id": "enchanted_woods_002",
+      "context_tag": "A Colorful Insect",
+      "puzzle_image": "nature_forest_002",
+      "answer": "BUTTERFLY",
+      "letters": ["B", "U", "T", "T", "E", "R", "F", "L", "Y"],
+      "distractor_letters": ["M", "O", "K"],
+      "difficulty": 1,
+      "anchor_letters": [],
+      "explanation": {
+        "breakdown": "Butter (stick of butter) + Fly (flying insect) = Butterfly",
+        "logic_type": "compound_word"
+      }
+    },
+    {
+      "puzzle_id": "enchanted_woods_003",
+      "context_tag": "A Glowing Insect",
+      "puzzle_image": "nature_forest_003",
+      "answer": "FIREFLY",
+      "letters": ["F", "I", "R", "E", "F", "L", "Y"],
+      "distractor_letters": ["S", "T", "A"],
+      "difficulty": 1,
+      "anchor_letters": [],
+      "explanation": {
+        "breakdown": "Fire (flames) + Fly (flying insect) = Firefly",
+        "logic_type": "compound_word"
+      }
+    },
+    {
+      "puzzle_id": "enchanted_woods_004",
+      "context_tag": "A Type of Tree",
+      "puzzle_image": "nature_forest_004",
+      "answer": "PALM",
+      "letters": ["P", "A", "L", "M"],
+      "distractor_letters": ["T", "R", "E"],
+      "difficulty": 1,
+      "anchor_letters": [],
+      "explanation": {
+        "breakdown": "Palm (of your hand) sounds like Palm (tree)",
+        "logic_type": "homophone"
+      }
+    },
+    {
+      "puzzle_id": "enchanted_woods_005",
+      "context_tag": "A Floor Covering",
+      "puzzle_image": "nature_forest_005",
+      "answer": "CARPET",
+      "letters": ["C", "A", "R", "P", "E", "T"],
+      "distractor_letters": ["M", "O", "N"],
+      "difficulty": 1,
+      "anchor_letters": [],
+      "explanation": {
+        "breakdown": "Car + Pet = Carpet (syllable combination)",
+        "logic_type": "syllable_smash"
+      }
+    },
+    {
+      "puzzle_id": "enchanted_woods_006",
+      "context_tag": "Something Bees Live In",
+      "puzzle_image": "nature_forest_006",
+      "answer": "BEEHIVE",
+      "letters": ["B", "E", "E", "H", "I", "V", "E"],
+      "distractor_letters": ["S", "T", "R"],
+      "difficulty": 1,
+      "anchor_letters": [],
+      "explanation": {
+        "breakdown": "B (letter sound 'bee') + Hive = Beehive",
+        "logic_type": "letter_sound"
+      }
+    },
+    {
+      "puzzle_id": "enchanted_woods_007",
+      "context_tag": "A Bad Dream",
+      "puzzle_image": "nature_forest_007",
+      "answer": "NIGHTMARE",
+      "letters": ["N", "I", "G", "H", "T", "M", "A", "R", "E"],
+      "distractor_letters": ["S"],
+      "difficulty": 2,
+      "anchor_letters": [],
+      "explanation": {
+        "breakdown": "Knight (sounds like 'night') + Mare (female horse) = Nightmare",
+        "logic_type": "homophone"
+      }
+    },
+    {
+      "puzzle_id": "enchanted_woods_008",
+      "context_tag": "A Place with Land and Water",
+      "puzzle_image": "nature_forest_008",
+      "answer": "ISLAND",
+      "letters": ["I", "S", "L", "A", "N", "D"],
+      "distractor_letters": ["T", "R", "E"],
+      "difficulty": 2,
+      "anchor_letters": [],
+      "explanation": {
+        "breakdown": "Eye (sounds like 'I') + Land = Island",
+        "logic_type": "symbol_sub"
+      }
+    },
+    {
+      "puzzle_id": "enchanted_woods_009",
+      "context_tag": "Good Luck",
+      "puzzle_image": "nature_forest_009",
+      "answer": "FORTUNE",
+      "letters": ["F", "O", "R", "T", "U", "N", "E"],
+      "distractor_letters": ["S", "I", "L"],
+      "difficulty": 2,
+      "anchor_letters": [],
+      "explanation": {
+        "breakdown": "4 (sounds like 'for') + Tune = Fortune",
+        "logic_type": "number_sub"
+      }
+    },
+    {
+      "puzzle_id": "enchanted_woods_010",
+      "context_tag": "A Bird of the Night",
+      "puzzle_image": "nature_forest_010",
+      "answer": "NIGHTOWL",
+      "letters": ["N", "I", "G", "H", "T", "O", "W", "L"],
+      "distractor_letters": ["E", "A"],
+      "difficulty": 1,
+      "anchor_letters": [],
+      "explanation": {
+        "breakdown": "Night (dark sky) + Owl = Night Owl",
+        "logic_type": "compound_word"
+      }
+    }
+  ]
+}
